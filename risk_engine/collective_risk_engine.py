@@ -1,5 +1,10 @@
 """Central, transparent collective-risk scoring for the AgentShield prototype."""
 
+from risk_engine.protection_engine import (
+    decide_protection,
+    print_decision,
+)
+
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -258,8 +263,13 @@ def run_demo():
     normal_top = print_top_results(normal_results)
 
     if normal_top:
-        print_highest_result(normal_top[0])
+     print_highest_result(normal_top[0])
 
+    normal_decision = decide_protection(
+        normal_top[0].overall_risk_score
+    )
+
+    print_decision(normal_decision)
     # ---------------------------------------------------------
     # 2. CONTROLLED ATTACK SCENARIO
     # ---------------------------------------------------------
@@ -280,8 +290,13 @@ def run_demo():
     attack_top = print_top_results(attack_results)
 
     if attack_top:
-        print_highest_result(attack_top[0])
+     print_highest_result(attack_top[0])
 
+    attack_decision = decide_protection(
+        attack_top[0].overall_risk_score
+    )
+
+    print_decision(attack_decision)
     # ---------------------------------------------------------
     # 3. SIMPLE COMPARISON
     # ---------------------------------------------------------
