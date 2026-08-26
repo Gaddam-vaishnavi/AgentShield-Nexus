@@ -101,20 +101,54 @@ def build_reason(scores):
 
 
 def apply_contextual_safeguards(weighted_score, signal_scores):
-    """Require multiple strong signals before HIGH or CRITICAL is possible.
-
-    This prevents velocity alone, behavior similarity alone, or a final-unit
-    purchase from producing a critical collective-risk result.
     """
+    Prevent isolated behavioral similarity or velocity from creating
+    an unnecessarily high collective-risk result.
+
+    HIGH risk requires:
+    - at least two strong signals, AND
+    - meaningful synchronization or inventory pressure.
+
+    CRITICAL risk requires:
+    - at least three strong signals, AND
+    - meaningful inventory pressure.
+
+    This helps separate normal popular-product activity from
+    genuine collective inventory pressure.
+    """
+
     strong_signal_count = sum(
-        score >= STRONG_SIGNAL_SCORE for score in signal_scores.values()
+        score >= STRONG_SIGNAL_SCORE
+        for score in signal_scores.values()
     )
+
+    synchronization_strong = (
+        signal_scores["synchronization"] >= STRONG_SIGNAL_SCORE
+    )
+
+    inventory_strong = (
+        signal_scores["inventory"] >= STRONG_SIGNAL_SCORE
+    )
+
+    # High velocity + high behavior similarity alone
+    # should not be enough for HIGH risk.
     if strong_signal_count < MIN_SIGNALS_FOR_HIGH_RISK:
         return min(weighted_score, MEDIUM_RISK_MAX_SCORE - 1)
+
+    # Require either strong synchronization or strong
+    # inventory pressure before allowing HIGH risk.
+    if not (synchronization_strong or inventory_strong):
+        return min(weighted_score, MEDIUM_RISK_MAX_SCORE - 1)
+
+    # CRITICAL requires at least three strong signals
+    # and strong inventory pressure.
     if strong_signal_count < MIN_SIGNALS_FOR_CRITICAL_RISK:
         return min(weighted_score, HIGH_RISK_MAX_SCORE - 1)
-    return weighted_score
 
+    if not inventory_strong:
+        return min(weighted_score, HIGH_RISK_MAX_SCORE - 1)
+
+    return weighted_score
 
 def analyze_collective_risk(events, agents=None):
     """Combine the existing detector outputs into one result per purchase second."""
@@ -201,17 +235,75 @@ def print_highest_result(result):
 
 
 def run_demo():
-    """Run the existing simulator and all four reusable risk signals."""
+    """Compare normal commerce with the controlled inventory-cornering scenario."""
+
+    # ---------------------------------------------------------
+    # 1. NORMAL COMMERCE SIMULATION
+    # ---------------------------------------------------------
     from simulator.simulator import SupermarketSimulation, create_agents
 
-    agents = create_agents()
-    simulation = SupermarketSimulation()
-    events = simulation.run(agents)
-    results = analyze_collective_risk(events, agents)
-    top_results = print_top_results(results)
-    if top_results:
-        print_highest_result(top_results[0])
-    return results
+    print("=" * 70)
+    print("NORMAL COMMERCE SCENARIO")
+    print("=" * 70)
+
+    normal_agents = create_agents()
+    normal_simulation = SupermarketSimulation()
+    normal_events = normal_simulation.run(normal_agents)
+
+    normal_results = analyze_collective_risk(
+        normal_events,
+        normal_agents,
+    )
+
+    normal_top = print_top_results(normal_results)
+
+    if normal_top:
+        print_highest_result(normal_top[0])
+
+    # ---------------------------------------------------------
+    # 2. CONTROLLED ATTACK SCENARIO
+    # ---------------------------------------------------------
+    from simulator.attack_scenario import run_stress_scenario
+
+    print("\n")
+    print("=" * 70)
+    print("CONTROLLED INVENTORY CORNERING SCENARIO")
+    print("=" * 70)
+
+    attack_events, attack_agents = run_stress_scenario()
+
+    attack_results = analyze_collective_risk(
+        attack_events,
+        attack_agents,
+    )
+
+    attack_top = print_top_results(attack_results)
+
+    if attack_top:
+        print_highest_result(attack_top[0])
+
+    # ---------------------------------------------------------
+    # 3. SIMPLE COMPARISON
+    # ---------------------------------------------------------
+    print("\n")
+    print("=" * 70)
+    print("AGENTSHIELD COMPARISON")
+    print("=" * 70)
+
+    if normal_top and attack_top:
+        normal_score = normal_top[0].overall_risk_score
+        attack_score = attack_top[0].overall_risk_score
+
+        print(f"Normal scenario highest risk : {normal_score}/100")
+        print(f"Attack scenario highest risk : {attack_score}/100")
+
+        print("\nAgentShield result:")
+        if attack_score > normal_score:
+            print("The controlled attack scenario produced a higher collective-risk score.")
+        else:
+            print("The attack scenario did not produce a higher score in this run.")
+
+    return normal_results, attack_results
 
 
 if __name__ == "__main__":
