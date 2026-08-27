@@ -13,7 +13,7 @@ Instead of evaluating transactions individually, AgentShield analyzes behavior a
 
 The AgentShield dashboard provides real-time visibility into collective commerce risk and the resulting protection decision.
 
-![AgentShield Nexus Dashboard](assets/dashboard.png)
+![AgentShield Nexus Dashboard](dashboard.png)
 
 ## The Problem
 
