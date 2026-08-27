@@ -9,6 +9,11 @@ AgentShield Nexus is a defense-first risk intelligence system for agentic commer
 Instead of evaluating transactions individually, AgentShield analyzes behavior across multiple AI shopping agents. It combines purchase velocity, synchronization, inventory pressure, and behavioral coordination to identify collective risk and recommend an appropriate protection action.
 
 ---
+## Dashboard
+
+The AgentShield dashboard provides real-time visibility into collective commerce risk and the resulting protection decision.
+
+![AgentShield Nexus Dashboard](assets/dashboard.png)
 
 ## The Problem
 
